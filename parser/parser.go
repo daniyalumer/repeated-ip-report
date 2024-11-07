@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bufio"
 	"encoding/csv"
 	"fmt"
 	"log"
@@ -12,6 +13,27 @@ import (
 )
 
 type RedirectLog = models.RedirectLog
+
+func ParseFile(file *os.File, uniqueRedirectLogs map[string][]RedirectLog, returnLogs map[string][]RedirectLog) map[string][]RedirectLog {
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		redirectLog := ParseLine(line)
+		if _, exists := uniqueRedirectLogs[redirectLog.Ip]; !exists {
+			uniqueRedirectLogs[redirectLog.Ip] = []RedirectLog{redirectLog}
+		} else {
+			lastLog := uniqueRedirectLogs[redirectLog.Ip][len(uniqueRedirectLogs[redirectLog.Ip])-1]
+			if lastLog.Keyword != redirectLog.Keyword && redirectLog.Timestamp.Sub(lastLog.Timestamp) <= 5*time.Second {
+				if !ContainsLog(returnLogs[redirectLog.Ip], lastLog) {
+					returnLogs[redirectLog.Ip] = append(returnLogs[redirectLog.Ip], lastLog)
+				}
+				uniqueRedirectLogs[redirectLog.Ip] = append(uniqueRedirectLogs[redirectLog.Ip], redirectLog)
+				returnLogs[redirectLog.Ip] = append(returnLogs[redirectLog.Ip], redirectLog)
+			}
+		}
+	}
+	return returnLogs
+}
 
 func ParseLine(line string) RedirectLog {
 	timeRegex := regexp.MustCompile(`(\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2} \+\d{4})`)
