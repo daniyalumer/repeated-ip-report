@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
+	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -57,6 +59,30 @@ func containsLog(logs []RedirectLog, log RedirectLog) bool {
 	return false
 }
 
+func CreateCsv() (*os.File, *csv.Writer) {
+	f, err := os.Create("output.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w := csv.NewWriter(f)
+
+	w.Write([]string{"Date", "IP", "Keyword", "URL"})
+
+	return f, w
+}
+
+func WriteToCsv(w *csv.Writer, returnLogs map[string][]RedirectLog) {
+	for _, logs := range returnLogs {
+		for _, lg := range logs {
+			err := w.Write([]string{fmt.Sprintf("%s", lg.Timestamp), lg.Ip, lg.Keyword, lg.Url})
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}
+}
+
 func main() {
 	file, err := os.Open("logs-testing.txt")
 	if err != nil {
@@ -85,5 +111,11 @@ func main() {
 	}
 	defer file.Close()
 
-	log.Printf("returnLogs: %+v", returnLogs)
+	f, w := CreateCsv()
+	defer f.Close()
+
+	WriteToCsv(w, returnLogs)
+
+	w.Flush()
+
 }
