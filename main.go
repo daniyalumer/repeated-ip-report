@@ -28,7 +28,7 @@ func main() {
 			uniqueRedirectLogs[redirectLog.Ip] = []RedirectLog{redirectLog}
 		} else {
 			lastLog := uniqueRedirectLogs[redirectLog.Ip][len(uniqueRedirectLogs[redirectLog.Ip])-1]
-			if lastLog.Keyword != redirectLog.Keyword && lastLog.Timestamp.Sub(redirectLog.Timestamp) <= 5*time.Second {
+			if lastLog.Keyword != redirectLog.Keyword && redirectLog.Timestamp.Sub(lastLog.Timestamp) <= 5*time.Second {
 				if !parser.ContainsLog(returnLogs[redirectLog.Ip], lastLog) {
 					returnLogs[redirectLog.Ip] = append(returnLogs[redirectLog.Ip], lastLog)
 				}
@@ -45,5 +45,4 @@ func main() {
 	parser.WriteToCsv(w, returnLogs)
 
 	w.Flush()
-
 }
