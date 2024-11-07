@@ -25,25 +25,17 @@ func parseLine(line string) RedirectLog {
 		log.Fatal(err)
 	}
 
-	// log.Println("timeStamp: ", timeStamp)
-
-	// log.Println("timestamp: ", timestamp)
-
 	ipRegex := regexp.MustCompile(`(\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})`)
 	ip := ipRegex.FindString(line)
-	// log.Println("ip: ", ip)
 
 	keywordRegex := regexp.MustCompile(`keyword=([^ ]+)`)
 	keyword := keywordRegex.FindString(line)
-	// log.Println("keyword: ", keyword)
 
 	userRegex := regexp.MustCompile(`"([^"]+)"$`)
 	userAgent := userRegex.FindString(line)
-	// log.Println("userAgent: ", userAgent)
 
 	urlRegex := regexp.MustCompile(`\s+(\S+)\s+HTTP/1.1`)
 	urlString := urlRegex.FindString(line)
-	// log.Println("url: ", urlString)
 
 	redirectLog := RedirectLog{
 		Timestamp: timeStamp,
@@ -78,7 +70,6 @@ func main() {
 	for scanner.Scan() {
 		line := scanner.Text()
 		redirectLog := parseLine(line)
-		// log.Printf("redirectLog: %+v", redirectLog)
 		if _, exists := uniqueRedirectLogs[redirectLog.Ip]; !exists {
 			uniqueRedirectLogs[redirectLog.Ip] = []RedirectLog{redirectLog}
 		} else {
