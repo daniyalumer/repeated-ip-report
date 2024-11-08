@@ -3,7 +3,6 @@ package parser
 import (
 	"bufio"
 	"encoding/csv"
-	"log"
 	"os"
 	"regexp"
 	"time"
@@ -23,7 +22,10 @@ func ParseFile(file *os.File, uniqueRedirectLogs map[string][]models.RedirectLog
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		redirectLog := ParseLine(line)
+		redirectLog, err := ParseLine(line)
+		if err != nil {
+			return nil, err
+		}
 		if _, exists := uniqueRedirectLogs[redirectLog.Ip]; !exists {
 			uniqueRedirectLogs[redirectLog.Ip] = []models.RedirectLog{redirectLog}
 		} else {
@@ -41,13 +43,10 @@ func ParseFile(file *os.File, uniqueRedirectLogs map[string][]models.RedirectLog
 	return filteredLogs, err
 }
 
-func ParseLine(line string) models.RedirectLog {
+func ParseLine(line string) (models.RedirectLog, error) {
 	timeStampStr := timeRegex.FindString(line)
 
 	timeStamp, err := time.Parse("02/Jan/2006:15:04:05 +0000", timeStampStr)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	ip := ipRegex.FindString(line)
 
@@ -65,7 +64,7 @@ func ParseLine(line string) models.RedirectLog {
 		Url:       urlString,
 	}
 
-	return redirectLog
+	return redirectLog, err
 }
 
 func ContainsLog(logs []models.RedirectLog, log models.RedirectLog) bool {
@@ -77,26 +76,27 @@ func ContainsLog(logs []models.RedirectLog, log models.RedirectLog) bool {
 	return false
 }
 
-func CreateCsv() (*os.File, *csv.Writer) {
+func CreateCsv() (*os.File, *csv.Writer, error) {
 	f, err := os.Create("output.csv")
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, err
 	}
 
 	w := csv.NewWriter(f)
 
 	w.Write([]string{"Date", "IP", "Keyword", "URL"})
 
-	return f, w
+	return f, w, nil
 }
 
-func WriteToCsv(w *csv.Writer, returnLogs map[string][]models.RedirectLog) {
+func WriteToCsv(w *csv.Writer, returnLogs map[string][]models.RedirectLog) error {
 	for _, logs := range returnLogs {
 		for _, lg := range logs {
 			err := w.Write([]string{string(lg.Timestamp.Format(time.RFC3339)), lg.Ip, lg.Keyword, lg.Url})
 			if err != nil {
-				log.Println(err)
+				return err
 			}
 		}
 	}
+	return nil
 }

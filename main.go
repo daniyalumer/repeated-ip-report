@@ -21,14 +21,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if filteredLogs == nil {
+		log.Fatal("filteredLogs is nil")
+	}
 
 	defer file.Close()
 
-	f, w := parser.CreateCsv()
+	f, w, err := parser.CreateCsv()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	defer f.Close()
 
-	parser.WriteToCsv(w, filteredLogs)
+	err = parser.WriteToCsv(w, filteredLogs)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	w.Flush()
 }
