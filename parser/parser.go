@@ -3,7 +3,6 @@ package parser
 import (
 	"bufio"
 	"encoding/csv"
-	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -29,6 +28,9 @@ func ParseFile(file *os.File, uniqueRedirectLogs map[string][]models.RedirectLog
 				filteredLogs[redirectLog.Ip] = append(filteredLogs[redirectLog.Ip], redirectLog)
 			}
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
 	}
 	return filteredLogs
 }
@@ -90,7 +92,7 @@ func CreateCsv() (*os.File, *csv.Writer) {
 func WriteToCsv(w *csv.Writer, returnLogs map[string][]models.RedirectLog) {
 	for _, logs := range returnLogs {
 		for _, lg := range logs {
-			err := w.Write([]string{fmt.Sprintf("%s", lg.Timestamp), lg.Ip, lg.Keyword, lg.Url})
+			err := w.Write([]string{string(lg.Timestamp.Format(time.RFC3339)), lg.Ip, lg.Keyword, lg.Url})
 			if err != nil {
 				log.Println(err)
 			}
