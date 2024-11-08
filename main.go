@@ -4,10 +4,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/daniyalumer/repeated-ip-report/models"
 	"github.com/daniyalumer/repeated-ip-report/parser"
 )
-
-type RedirectLog = parser.RedirectLog
 
 func main() {
 	file, err := os.Open("logs_1feb.txt")
@@ -15,10 +14,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	uniqueRedirectLogs := make(map[string][]RedirectLog)
-	returnLogs := make(map[string][]RedirectLog)
+	uniqueRedirectLogs := make(map[string][]models.RedirectLog)
+	filteredLogs := make(map[string][]models.RedirectLog)
 
-	parser.ParseFile(file, uniqueRedirectLogs, returnLogs)
+	parser.ParseFile(file, uniqueRedirectLogs, filteredLogs)
 
 	defer file.Close()
 
@@ -26,7 +25,7 @@ func main() {
 
 	defer f.Close()
 
-	parser.WriteToCsv(w, returnLogs)
+	parser.WriteToCsv(w, filteredLogs)
 
 	w.Flush()
 }

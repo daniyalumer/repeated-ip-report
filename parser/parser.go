@@ -12,30 +12,28 @@ import (
 	"github.com/daniyalumer/repeated-ip-report/models"
 )
 
-type RedirectLog = models.RedirectLog
-
-func ParseFile(file *os.File, uniqueRedirectLogs map[string][]RedirectLog, returnLogs map[string][]RedirectLog) map[string][]RedirectLog {
+func ParseFile(file *os.File, uniqueRedirectLogs map[string][]models.RedirectLog, filteredLogs map[string][]models.RedirectLog) map[string][]models.RedirectLog {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
 		redirectLog := ParseLine(line)
 		if _, exists := uniqueRedirectLogs[redirectLog.Ip]; !exists {
-			uniqueRedirectLogs[redirectLog.Ip] = []RedirectLog{redirectLog}
+			uniqueRedirectLogs[redirectLog.Ip] = []models.RedirectLog{redirectLog}
 		} else {
 			lastLog := uniqueRedirectLogs[redirectLog.Ip][len(uniqueRedirectLogs[redirectLog.Ip])-1]
 			if lastLog.Keyword != redirectLog.Keyword && redirectLog.Timestamp.Sub(lastLog.Timestamp) <= 5*time.Second {
-				if !ContainsLog(returnLogs[redirectLog.Ip], lastLog) {
-					returnLogs[redirectLog.Ip] = append(returnLogs[redirectLog.Ip], lastLog)
+				if !ContainsLog(filteredLogs[redirectLog.Ip], lastLog) {
+					filteredLogs[redirectLog.Ip] = append(filteredLogs[redirectLog.Ip], lastLog)
 				}
 				uniqueRedirectLogs[redirectLog.Ip] = append(uniqueRedirectLogs[redirectLog.Ip], redirectLog)
-				returnLogs[redirectLog.Ip] = append(returnLogs[redirectLog.Ip], redirectLog)
+				filteredLogs[redirectLog.Ip] = append(filteredLogs[redirectLog.Ip], redirectLog)
 			}
 		}
 	}
-	return returnLogs
+	return filteredLogs
 }
 
-func ParseLine(line string) RedirectLog {
+func ParseLine(line string) models.RedirectLog {
 	timeRegex := regexp.MustCompile(`(\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2} \+\d{4})`)
 	timeStampStr := timeRegex.FindString(line)
 
@@ -56,7 +54,7 @@ func ParseLine(line string) RedirectLog {
 	urlRegex := regexp.MustCompile(`\s+(\S+)\s+HTTP/1.1`)
 	urlString := urlRegex.FindString(line)
 
-	redirectLog := RedirectLog{
+	redirectLog := models.RedirectLog{
 		Timestamp: timeStamp,
 		Ip:        ip,
 		Keyword:   keyword,
@@ -67,7 +65,7 @@ func ParseLine(line string) RedirectLog {
 	return redirectLog
 }
 
-func ContainsLog(logs []RedirectLog, log RedirectLog) bool {
+func ContainsLog(logs []models.RedirectLog, log models.RedirectLog) bool {
 	for _, l := range logs {
 		if l == log {
 			return true
@@ -89,7 +87,7 @@ func CreateCsv() (*os.File, *csv.Writer) {
 	return f, w
 }
 
-func WriteToCsv(w *csv.Writer, returnLogs map[string][]RedirectLog) {
+func WriteToCsv(w *csv.Writer, returnLogs map[string][]models.RedirectLog) {
 	for _, logs := range returnLogs {
 		for _, lg := range logs {
 			err := w.Write([]string{fmt.Sprintf("%s", lg.Timestamp), lg.Ip, lg.Keyword, lg.Url})
