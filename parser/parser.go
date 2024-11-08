@@ -26,6 +26,9 @@ func ParseFile(file *os.File, uniqueRedirectLogs map[string][]models.RedirectLog
 		if err != nil {
 			return nil, err
 		}
+		if redirectLog.Ip == "" {
+			continue
+		}
 		if _, exists := uniqueRedirectLogs[redirectLog.Ip]; !exists {
 			uniqueRedirectLogs[redirectLog.Ip] = []models.RedirectLog{redirectLog}
 		} else {
@@ -47,6 +50,9 @@ func ParseLine(line string) (models.RedirectLog, error) {
 	timeStampStr := timeRegex.FindString(line)
 
 	timeStamp, err := time.Parse("02/Jan/2006:15:04:05 +0000", timeStampStr)
+	if err != nil {
+		return models.RedirectLog{}, err
+	}
 
 	ip := ipRegex.FindString(line)
 
@@ -64,7 +70,7 @@ func ParseLine(line string) (models.RedirectLog, error) {
 		Url:       urlString,
 	}
 
-	return redirectLog, err
+	return redirectLog, nil
 }
 
 func ContainsLog(logs []models.RedirectLog, log models.RedirectLog) bool {
