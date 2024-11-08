@@ -11,7 +11,15 @@ import (
 	"github.com/daniyalumer/repeated-ip-report/models"
 )
 
-func ParseFile(file *os.File, uniqueRedirectLogs map[string][]models.RedirectLog, filteredLogs map[string][]models.RedirectLog) map[string][]models.RedirectLog {
+var (
+	timeRegex    = regexp.MustCompile(`(\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2} \+\d{4})`)
+	ipRegex      = regexp.MustCompile(`(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})`)
+	keywordRegex = regexp.MustCompile(`keyword=([^ ]+)`)
+	userRegex    = regexp.MustCompile(`"([^"]+)"$`)
+	urlRegex     = regexp.MustCompile(`\s+(\S+)\s+HTTP/1.1`)
+)
+
+func ParseFile(file *os.File, uniqueRedirectLogs map[string][]models.RedirectLog, filteredLogs map[string][]models.RedirectLog) (map[string][]models.RedirectLog, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -29,14 +37,11 @@ func ParseFile(file *os.File, uniqueRedirectLogs map[string][]models.RedirectLog
 			}
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-	return filteredLogs
+	err := scanner.Err()
+	return filteredLogs, err
 }
 
 func ParseLine(line string) models.RedirectLog {
-	timeRegex := regexp.MustCompile(`(\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2} \+\d{4})`)
 	timeStampStr := timeRegex.FindString(line)
 
 	timeStamp, err := time.Parse("02/Jan/2006:15:04:05 +0000", timeStampStr)
@@ -44,16 +49,12 @@ func ParseLine(line string) models.RedirectLog {
 		log.Fatal(err)
 	}
 
-	ipRegex := regexp.MustCompile(`(\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})`)
 	ip := ipRegex.FindString(line)
 
-	keywordRegex := regexp.MustCompile(`keyword=([^ ]+)`)
 	keyword := keywordRegex.FindString(line)
 
-	userRegex := regexp.MustCompile(`"([^"]+)"$`)
 	userAgent := userRegex.FindString(line)
 
-	urlRegex := regexp.MustCompile(`\s+(\S+)\s+HTTP/1.1`)
 	urlString := urlRegex.FindString(line)
 
 	redirectLog := models.RedirectLog{

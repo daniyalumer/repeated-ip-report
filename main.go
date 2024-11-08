@@ -17,7 +17,10 @@ func main() {
 	uniqueRedirectLogs := make(map[string][]models.RedirectLog)
 	filteredLogs := make(map[string][]models.RedirectLog)
 
-	parser.ParseFile(file, uniqueRedirectLogs, filteredLogs)
+	filteredLogs, err = parser.ParseFile(file, uniqueRedirectLogs, filteredLogs)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	defer file.Close()
 
