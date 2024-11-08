@@ -3,6 +3,7 @@ package parser
 import (
 	"bufio"
 	"encoding/csv"
+	"errors"
 	"os"
 	"regexp"
 	"time"
@@ -26,8 +27,8 @@ func ParseFile(file *os.File, uniqueRedirectLogs map[string][]models.RedirectLog
 		if err != nil {
 			return nil, err
 		}
-		if redirectLog.Ip == "" {
-			continue
+		if redirectLog == (models.RedirectLog{}) {
+			return nil, errors.New("empty redirect log")
 		}
 		if _, exists := uniqueRedirectLogs[redirectLog.Ip]; !exists {
 			uniqueRedirectLogs[redirectLog.Ip] = []models.RedirectLog{redirectLog}
